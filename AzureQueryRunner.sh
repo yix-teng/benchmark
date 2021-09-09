@@ -2,21 +2,18 @@
 
 set -e
 
-export AZURE_ACCOUNT=fivetran
-export AZURE_USER=developers
-if [ ! -f ~/.azure_password ]; then
-  echo "No password set, do this:"
-  echo "echo {mypassword} > ~/.azure_password"
-  exit 1
-fi
-export AZURE_PWD=`cat ~/.azure_password`
+export AZURE_USER=sqladminuser
+export AZURE_PWD='P@ssw0rd!'
 
-if [ -z "$AZURE_WAREHOUSE" ] || \
-   [ -z "$AZURE_DATABASE" ]; then
-  echo "missing \$AZURE_WAREHOUSE or \$AZURE_DATABASE" 1>&2
-  AZURE_WAREHOUSE=tpcds
-  AZURE_DATABASE=tpcds
-fi
+
+#export AZURE_WAREHOUSE=sqlservlessinternalselfmanaged.sql.azuresynapse.net
+#export AZURE_DATABASE=DeticatedSqlPool
+
+#export AZURE_WAREHOUSE=sqlservlessinternalselfmanaged-ondemand.sql.azuresynapse.net
+#export AZURE_DATABASE=sqlservlessinternalselfmanagedDB
+
+AZURE_WAREHOUSE=sqlservlessinternalselfmanaged-ondemand.sql.azuresynapse.net
+AZURE_DATABASE=sparkdb
 
 tempdir=`mktemp -d _work_XXXXXXXXXX`
 
@@ -31,21 +28,23 @@ runsql() {
     args="-N -I"
     shift 1
   fi
-  sqlcmd $args \
-    -S ${AZURE_WAREHOUSE}.database.windows.net \
-    -U "developers@${AZURE_WAREHOUSE}" \
+ echo sqlcmd $args \
+    -S ${AZURE_WAREHOUSE} \
+    -U "${AZURE_USER}" \
     -P "${AZURE_PWD}" \
     -d "${AZURE_DATABASE}" \
     $@
 }
+
+#sqlcmd -N -I -S sqlservlessinternalselfmanaged.sql.azuresynapse.net -U sqladminuser -P 'P@ssw0rd!' -d DeticatedSqlPool
 
 upload() {
   args="-q -c -t| -e error.log"
   if ! bcp \
     $@ \
     $args \
-    -S ${AZURE_WAREHOUSE}.database.windows.net \
-    -U "developers@${AZURE_WAREHOUSE}" \
+    -S ${AZURE_WAREHOUSE} \
+    -U "${AZURE_USER}" \
     -P "${AZURE_PWD}" \
     -d "${AZURE_DATABASE}"
   then
